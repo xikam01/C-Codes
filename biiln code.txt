@@ -1,0 +1,434 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+namespace ZamZam_Supermarket
+{
+    public partial class Billing : Form
+    {
+        public Billing()
+        {
+            InitializeComponent();
+            ShowData_Product();
+            ShowData_Customer();
+            ShowData_Billing();
+            ShowData_Of_Category();
+            Category();
+        }
+        SqlConnection con = new SqlConnection(@"Data Source=DESKTOP-GCFNTMM\SERVER2014;Initial Catalog=ZamZam_Supermarket;Integrated Security=True");
+        private void ShowData_Customer()
+        {
+            con.Open();
+            string Query = "select CUS_ID,CUS_Name,CUS_Phone,Balance From Customer";
+            SqlDataAdapter sda = new SqlDataAdapter(Query, con);
+            SqlCommandBuilder Builder = new SqlCommandBuilder(sda);
+            var ds = new DataSet();
+            sda.Fill(ds);
+            DGVCustomer.DataSource = ds.Tables[0];
+            con.Close();
+        }
+        private void ShowData_Product()
+        {
+            con.Open();
+            string Query = "select PR_ID,PR_Name,PR_Price,PR_Quantity From Product";
+            SqlDataAdapter sda = new SqlDataAdapter(Query, con);
+            SqlCommandBuilder Builder = new SqlCommandBuilder(sda);
+            var ds = new DataSet();
+            sda.Fill(ds);
+            DGVProduct.DataSource = ds.Tables[0];
+            con.Close();
+        }
+        private void ShowData_Billing()
+        {
+            con.Open();
+            string Query = "select * From Billing";
+            SqlDataAdapter sda = new SqlDataAdapter(Query, con);
+            SqlCommandBuilder Builder = new SqlCommandBuilder(sda);
+            var ds = new DataSet();
+            sda.Fill(ds);
+            DGVBilling.DataSource = ds.Tables[0];
+            con.Close();
+        }
+        private void Biliing_Load(object sender, EventArgs e)
+        {
+            labDate.Text = DateTime.Now.ToString();
+        }
+        void AddBalaance()
+        {
+
+            int id = Convert.ToInt32(DGVCustomer.SelectedRows[0].Cells[0].Value.ToString());
+            int newBalance = CUS + Convert.ToInt32(txtBalance.Text);
+            con.Open();
+            string query = "update Customer set Balance = " + newBalance + " where CUS_ID = " + id + ";";
+            SqlCommand cmd = new SqlCommand(query, con);
+            cmd.ExecuteNonQuery();
+            con.Close();
+            ShowData_Customer();
+        }
+        void UpdateProduct()
+        {
+
+            int id = Convert.ToInt32(DGVProduct.SelectedRows[0].Cells[0].Value.ToString());
+            int newQty = PR - Convert.ToInt32(txtQuantity.Text);
+            con.Open();
+            string query = "update Product set PR_Quantity = " + newQty + " where PR_ID = " + id + ";";
+            SqlCommand cmd = new SqlCommand(query, con);
+            cmd.ExecuteNonQuery();
+            con.Close();
+            ShowData_Product();
+        }
+        int CUS;
+        private void DGVCustomer_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            txtCName.Text = DGVCustomer.SelectedRows[0].Cells[1].Value.ToString();
+            txtPhone.Text = DGVCustomer.SelectedRows[0].Cells[2].Value.ToString();
+            CUS = Convert.ToInt32(DGVCustomer.SelectedRows[0].Cells[3].Value.ToString());
+        }
+        int PR;
+        private void DGVProduct_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            txtPName.Text = DGVProduct.SelectedRows[0].Cells[1].Value.ToString();
+            txtPrice.Text = DGVProduct.SelectedRows[0].Cells[2].Value.ToString();
+            PR = Convert.ToInt32(DGVProduct.SelectedRows[0].Cells[3].Value.ToString());
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            if (txtCName.Text == "" || txtPhone.Text == "" || txtPName.Text == "" || txtPrice.Text == "" || txtQuantity.Text == "" || txtTotal.Text == "" || txtDiscount.Text == "" || txtPaid.Text == "" || txtBalance.Text == "" || txtSubTotal.Text == "")
+            {
+                MessageBox.Show("Pleace Enter Full Information");
+            }
+            else if (Convert.ToInt32(txtQuantity.Text) > PR)
+                MessageBox.Show("waanu ka xunahay Hadhaagaagu ku gu Mafilna");
+            else
+            {
+                try
+                {
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("Insert into Billing values(@CUS_Name,@CUS_Phone,@PR_Name,@PR_Price,@PR_Quantity,@Total,@Discount,@Paid,@Balance,@SubTotal,@BL_Date)", con);
+                    cmd.Parameters.AddWithValue("@CUS_Name", txtCName.Text);
+                    cmd.Parameters.AddWithValue("@CUS_Phone", txtPhone.Text);
+                    cmd.Parameters.AddWithValue("@PR_Name", txtPName.Text);
+                    cmd.Parameters.AddWithValue("@PR_Price", txtPrice.Text);
+                    cmd.Parameters.AddWithValue("@PR_Quantity", txtQuantity.Text);
+                    cmd.Parameters.AddWithValue("@Total", txtTotal.Text);
+                    cmd.Parameters.AddWithValue("@Discount", txtDiscount.Text);
+                    cmd.Parameters.AddWithValue("@Paid", txtPaid.Text);
+                    cmd.Parameters.AddWithValue("@Balance", txtBalance.Text);
+                    cmd.Parameters.AddWithValue("@SubTotal", txtSubTotal.Text);
+                    cmd.Parameters.AddWithValue("@BL_Date", labDate.Text);
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Billing Saved !!");
+                    con.Close();
+                    ShowData_Billing();
+                    AddBalaance();
+                    UpdateProduct();
+                    txtCName.Clear();
+                    txtPhone.Clear();
+                    txtPName.Clear();
+                    txtPrice.Clear();
+                    txtQuantity.Clear();
+                    txtTotal.Clear();
+                    txtDiscount.Clear();
+                    txtPaid.Clear();
+                    txtBalance.Clear();
+                    txtSubTotal.Clear();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void txtQuantity_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (txtQuantity.Text != "")
+                {
+                    int qty = int.Parse(txtQuantity.Text);
+                    double price = int.Parse(txtPrice.Text);
+                    double total = price * qty;
+                    txtTotal.Text = total.ToString();
+                }
+                else
+                {
+                    txtTotal.Clear();
+                    txtTotal.Clear();
+                    txtDiscount.Clear();
+                    txtPaid.Clear();
+                    txtBalance.Clear();
+                    txtSubTotal.Clear();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Setting", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+
+        private void txtDiscount_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (txtDiscount.Text != "")
+                {
+                    double total = double.Parse(txtTotal.Text);
+                    double discount = double.Parse(txtDiscount.Text);
+                    double tot = total - discount;
+                    txtSubTotal.Text = tot.ToString();
+                }
+                else
+                {
+                    txtSubTotal.Text = "";
+                    txtPaid.Clear();
+                    txtBalance.Clear();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Message", MessageBoxButtons.OK,
+               MessageBoxIcon.Error);
+            }
+        }
+
+        private void txtPaid_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (txtPaid.Text != "")
+                {
+                    double subt = double.Parse(txtSubTotal.Text);
+                    double rec = double.Parse(txtPaid.Text);
+                    double bal = subt - rec;
+                    txtBalance.Text = bal.ToString();
+                }
+                else
+                {
+                    txtBalance.Text = "";
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Message", MessageBoxButtons.OK,
+               MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnView_Click(object sender, EventArgs e)
+        {
+            View_Billing f = new View_Billing();
+            f.Show();
+        }
+        int key;
+        private void DGVBilling_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            txtCName.Text = DGVBilling.SelectedRows[0].Cells[1].Value.ToString();
+            txtPhone.Text = DGVBilling.SelectedRows[0].Cells[2].Value.ToString();
+            txtPName.Text = DGVBilling.SelectedRows[0].Cells[3].Value.ToString();
+            txtPrice.Text = DGVBilling.SelectedRows[0].Cells[4].Value.ToString();
+            txtQuantity.Text = DGVBilling.SelectedRows[0].Cells[5].Value.ToString();
+            txtTotal.Text = DGVBilling.SelectedRows[0].Cells[6].Value.ToString();
+            txtDiscount.Text = DGVBilling.SelectedRows[0].Cells[7].Value.ToString();
+            txtPaid.Text = DGVBilling.SelectedRows[0].Cells[8].Value.ToString();
+            txtBalance.Text = DGVBilling.SelectedRows[0].Cells[9].Value.ToString();
+            txtSubTotal.Text = DGVBilling.SelectedRows[0].Cells[10].Value.ToString();
+            if (txtCName.Text == "" || txtPhone.Text == "" || txtTotal.Text == "" || txtDiscount.Text == "" || txtPaid.Text == "" || txtBalance.Text == "" || txtSubTotal.Text == "" || txtPName.Text == "" || txtPrice.Text == "" || txtQuantity.Text == "")
+            {
+                key = 0;
+
+            }
+            else
+            {
+                key = Convert.ToInt32(DGVBilling.SelectedRows[0].Cells[0].Value.ToString());
+            }
+        }
+
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            key = 0;
+            txtCName.Clear();
+            txtPhone.Clear();
+            txtPName.Clear();
+            txtPrice.Clear();
+            txtQuantity.Clear();
+            txtTotal.Clear();
+            txtDiscount.Clear();
+            txtPaid.Clear();
+            txtBalance.Clear();
+            txtSubTotal.Clear();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (txtCName.Text == "" || txtPhone.Text == "" || txtTotal.Text == "" || txtDiscount.Text == "" || txtPaid.Text == "" || txtBalance.Text == "" || txtSubTotal.Text == "" || txtPName.Text == "" || txtPrice.Text == "" || txtQuantity.Text == "")
+            {
+                MessageBox.Show("Please Enter Missing Information", "Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                try
+                {
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("Update Billing set CUS_Name=@CUS_Name,CUS_Phone=@CUS_Phone,PR_Name=@PR_Name,PR_Price=@PR_Price,PR_Quantity=@PR_Quantity,Total=@Total,Discount=@Discount,Paid=@Paid,Balance=@Balance,SubTotal=@SubTotal Where BL_ID=@BL_ID", con);
+                    cmd.Parameters.AddWithValue("@CUS_Name", txtCName.Text);
+                    cmd.Parameters.AddWithValue("@CUS_Phone", txtPhone.Text);
+                    cmd.Parameters.AddWithValue("@Total", txtTotal.Text);
+                    cmd.Parameters.AddWithValue("@Discount", txtDiscount.Text);
+                    cmd.Parameters.AddWithValue("@Paid", txtPaid.Text);
+                    cmd.Parameters.AddWithValue("@Balance", txtBalance.Text);
+                    cmd.Parameters.AddWithValue("@SubTotal", txtSubTotal.Text);
+                    cmd.Parameters.AddWithValue("@PR_Name", txtPName.Text);
+                    cmd.Parameters.AddWithValue("@PR_Price", txtPrice.Text);
+                    cmd.Parameters.AddWithValue("@PR_Quantity", txtQuantity.Text);
+                    cmd.Parameters.AddWithValue("@BL_ID", key);
+                    cmd.ExecuteNonQuery();
+                    con.Close();
+                    MessageBox.Show("Billing Save Seccssesfuly.");
+                    ShowData_Billing();
+                    txtCName.Clear();
+                    txtPhone.Clear();
+                    txtTotal.Clear();
+                    txtDiscount.Clear();
+                    txtPaid.Clear();
+                    txtBalance.Clear();
+                    txtSubTotal.Clear();
+                    txtPName.Clear();
+                    txtPrice.Clear();
+                    txtQuantity.Clear();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (key == 0)
+            {
+                MessageBox.Show("Please Select Category");
+            }
+            else
+            {
+                try
+                {
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("Delete From Billing where BL_ID=@BL_ID", con);
+                    cmd.Parameters.AddWithValue("@BL_ID", key);
+                    cmd.ExecuteNonQuery();
+                    con.Close();
+                    ShowData_Billing();
+                    MessageBox.Show("Billing Delete ");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void txtCSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (txtCSearch.Text != "")
+            {
+                SqlCommand cmd = new SqlCommand("select CUS_ID,CUS_Name,CUS_Phone,Balance from Customer where CUS_Name LIKE'" + txtCSearch.Text + "%'", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVCustomer.DataSource = ds.Tables[0];
+            }
+
+            else
+            {
+                SqlCommand cmd = new SqlCommand("select CUS_ID,CUS_Name,CUS_Phone,Balance from Customer ", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVCustomer.DataSource = ds.Tables[0];
+            }
+        }
+
+        private void txtBi_TextChanged(object sender, EventArgs e)
+        {
+            if (txtBSearch.Text != "")
+            {
+                SqlCommand cmd = new SqlCommand("select *from Billing where CUS_Name LIKE'" + txtBSearch.Text + "%'", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVBilling.DataSource = ds.Tables[0];
+            }
+
+            else
+            {
+                SqlCommand cmd = new SqlCommand("select *from Billing ", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVBilling.DataSource = ds.Tables[0];
+            }
+        }
+
+        private void txtPSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (txtPSearch.Text != "")
+            {
+                SqlCommand cmd = new SqlCommand("select PR_ID,PR_Name,PR_Price,PR_Quantity From Product where PR_Name LIKE'" + txtPSearch.Text + "%'", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVProduct.DataSource = ds.Tables[0];
+            }
+
+            else
+            {
+                SqlCommand cmd = new SqlCommand("select PR_ID,PR_Name,PR_Price,PR_Quantity From Product ", con);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                DGVBilling.DataSource = ds.Tables[0];
+            }
+        }
+        private void ShowData_Of_Category()
+        {
+            SqlCommand cmd1 = new SqlCommand("select PR_ID,PR_Name,PR_Price,PR_Quantity from Product where CA_Name Like'%" + txtCaName.Text + "'", con);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable dt = new DataTable();
+            da.SelectCommand = cmd1;
+            dt.Clear();
+            da.Fill(dt);
+            DGVProduct.DataSource = dt;
+        }
+        private void Category()
+        {
+            con.Open();
+            SqlCommand cmb = new SqlCommand("Select Distinct CA_Name from Product", con);
+            cmb.ExecuteNonQuery();
+            SqlDataAdapter da1 = new SqlDataAdapter(cmb);
+            DataTable dt1 = new DataTable();
+            da1.Fill(dt1);
+            foreach (DataRow dr in dt1.Rows)
+            {
+                txtCaName.Items.Add(dr["CA_Name"].ToString());
+            }
+            con.Close();
+        }
+        private void txtCategory_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowData_Of_Category();
+        }
+    }
+}

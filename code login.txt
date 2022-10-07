@@ -1,0 +1,25 @@
+
+            SqlConnection con = new SqlConnection(@"Data Source=(local);Initial Catalog=TAWAKALGROCERY;Integrated Security=True");
+            SqlCommand cmd = new SqlCommand("select * from login where username='" + txtusername.Text + "'and usertype='" + cmb.SelectedItem + "'and password= '" + txtpassword.Text + "'", con);
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataTable dtbl = new DataTable();
+            da.Fill(dtbl);
+            if (dtbl.Rows.Count > 0)
+            {
+                MessageBox.Show("you login succesfully aded" + dtbl.Rows[0][2]);
+                if (cmb.SelectedIndex == 0)
+                {
+                    Dashboard dh = new Dashboard();
+                    dh.Show();
+                    this.Hide();
+                }
+                else
+                {
+                    Dashboard dash = new Dashboard();
+                    dash.Show();
+                    this.Hide();
+                }
+        }
+    }
+    }
+}
